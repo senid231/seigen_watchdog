@@ -4,7 +4,7 @@ module SeigenWatchdog
   module Limiters
     # Limiter based on a custom checker lambda
     class Custom < Base
-      # @param checker [Proc,#call] a lambda/proc or object respond to #call that returns true when the limit is exceeded
+      # @param checker [Proc,#call] a lambda/proc or object respond to #call that returns true if limit exceeded
       def initialize(checker:)
         super()
         @checker = checker

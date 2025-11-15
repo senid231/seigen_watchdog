@@ -59,22 +59,15 @@ RSpec.describe SeigenWatchdog::Registry do
     end
 
     context 'when block uses old value' do
-      let(:block) do
-        lambda do |old|
-          @old_value = old
-          old * 2
-        end
-      end
+      let(:block) { ->(old) { old * 2 } }
+      let(:key) { :value }
 
       before do
         registry.create(:value, 10)
       end
 
-      let(:key) { :value }
-
       it 'yields the old value to the block and stores new value' do
         subject
-        expect(@old_value).to eq(10)
         expect(registry.get(:value)).to eq(20)
       end
     end

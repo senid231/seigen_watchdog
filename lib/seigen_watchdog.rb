@@ -2,6 +2,7 @@
 
 require_relative 'seigen_watchdog/version'
 
+# Monitoring and watchdog module for Ruby applications
 module SeigenWatchdog
   class Error < StandardError; end
 

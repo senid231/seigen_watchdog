@@ -2,7 +2,7 @@
 
 RSpec.describe SeigenWatchdog do
   after do
-    SeigenWatchdog.stop if SeigenWatchdog.started?
+    described_class.stop if described_class.started?
   end
 
   it 'has a version number' do
@@ -10,7 +10,7 @@ RSpec.describe SeigenWatchdog do
   end
 
   describe '.start' do
-    subject { SeigenWatchdog.start(check_interval: check_interval, killer: killer, limiters: limiters) }
+    subject { described_class.start(check_interval: check_interval, killer: killer, limiters: limiters) }
 
     let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
     let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
@@ -21,8 +21,8 @@ RSpec.describe SeigenWatchdog do
       it 'starts the monitor and returns it' do
         monitor = subject
         expect(monitor).to be_a(SeigenWatchdog::Monitor)
-        expect(SeigenWatchdog.started?).to be true
-        expect(SeigenWatchdog.monitor).to eq(monitor)
+        expect(described_class.started?).to be true
+        expect(described_class.monitor).to eq(monitor)
       end
     end
 
@@ -38,24 +38,24 @@ RSpec.describe SeigenWatchdog do
   end
 
   describe '.stop' do
-    subject { SeigenWatchdog.stop }
+    subject { described_class.stop }
 
     let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
     let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
 
     before do
-      SeigenWatchdog.start(check_interval: 1, killer: killer, limiters: limiters)
+      described_class.start(check_interval: 1, killer: killer, limiters: limiters)
     end
 
     it 'stops the monitor' do
       subject
-      expect(SeigenWatchdog.started?).to be false
-      expect(SeigenWatchdog.monitor).to be_nil
+      expect(described_class.started?).to be false
+      expect(described_class.monitor).to be_nil
     end
   end
 
   describe '.started?' do
-    subject { SeigenWatchdog.started? }
+    subject { described_class.started? }
 
     context 'when not started' do
       it 'returns false' do
@@ -68,7 +68,7 @@ RSpec.describe SeigenWatchdog do
       let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
 
       before do
-        SeigenWatchdog.start(check_interval: 1, killer: killer, limiters: limiters)
+        described_class.start(check_interval: 1, killer: killer, limiters: limiters)
       end
 
       it 'returns true' do
@@ -78,7 +78,7 @@ RSpec.describe SeigenWatchdog do
   end
 
   describe '.monitor' do
-    subject { SeigenWatchdog.monitor }
+    subject { described_class.monitor }
 
     context 'when not started' do
       it 'returns nil' do
@@ -89,7 +89,7 @@ RSpec.describe SeigenWatchdog do
     context 'when started' do
       let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
       let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
-      let(:monitor) { SeigenWatchdog.start(check_interval: 1, killer: killer, limiters: limiters) }
+      let(:monitor) { described_class.start(check_interval: 1, killer: killer, limiters: limiters) }
 
       before do
         monitor

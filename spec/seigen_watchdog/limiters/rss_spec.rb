@@ -6,10 +6,15 @@ RSpec.describe SeigenWatchdog::Limiters::RSS do
 
     let(:limiter) { described_class.new(max_rss: max_rss) }
     let(:max_rss) { 100 * 1024 * 1024 } # 100 MB
+    let(:process_mem) { instance_double(GetProcessMem) }
+
+    before do
+      allow(GetProcessMem).to receive(:new).and_return(process_mem)
+    end
 
     context 'when RSS is below max' do
       before do
-        allow_any_instance_of(GetProcessMem).to receive(:bytes).and_return(50 * 1024 * 1024)
+        allow(process_mem).to receive(:bytes).and_return(50 * 1024 * 1024)
       end
 
       it 'returns false' do
@@ -19,7 +24,7 @@ RSpec.describe SeigenWatchdog::Limiters::RSS do
 
     context 'when RSS is at or above max' do
       before do
-        allow_any_instance_of(GetProcessMem).to receive(:bytes).and_return(100 * 1024 * 1024)
+        allow(process_mem).to receive(:bytes).and_return(100 * 1024 * 1024)
       end
 
       it 'returns true' do

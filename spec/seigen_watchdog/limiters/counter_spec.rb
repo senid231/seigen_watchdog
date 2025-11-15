@@ -46,10 +46,8 @@ RSpec.describe SeigenWatchdog::Limiters::Counter do
     end
 
     context 'when counter does not exist' do
-      let(:subject) { described_class.increment(:nonexistent) }
-
       it 'raises NotFoundError' do
-        expect { subject }.to raise_error(SeigenWatchdog::Registry::NotFoundError)
+        expect { described_class.increment(:nonexistent) }.to raise_error(SeigenWatchdog::Registry::NotFoundError)
       end
     end
   end

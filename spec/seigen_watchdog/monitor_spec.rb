@@ -53,7 +53,7 @@ RSpec.describe SeigenWatchdog::Monitor do
     end
 
     it 'increments the checks counter' do
-      expect { subject }.to change { monitor.checks }.from(0).to(1)
+      expect { subject }.to change(monitor, :checks).from(0).to(1)
     end
 
     context 'when no limiter exceeded' do

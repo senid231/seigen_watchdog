@@ -35,6 +35,25 @@ RSpec.describe SeigenWatchdog do
         expect(monitor.running?).to be false
       end
     end
+
+    context 'with before_kill callback' do
+      subject do
+        described_class.start(
+          check_interval: check_interval,
+          killer: killer,
+          limiters: limiters,
+          before_kill: before_kill
+        )
+      end
+
+      let(:check_interval) { nil }
+      let(:before_kill) { ->(limiter) { limiter.class.name } }
+
+      it 'passes before_kill to monitor' do
+        monitor = subject
+        expect(monitor).to be_a(SeigenWatchdog::Monitor)
+      end
+    end
   end
 
   describe '.stop' do

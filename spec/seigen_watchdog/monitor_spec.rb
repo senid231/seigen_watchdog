@@ -230,6 +230,92 @@ RSpec.describe SeigenWatchdog::Monitor do
         expect(on_exception).to have_received(:call).with(error)
       end
     end
+
+    context 'with before_kill callback' do
+      subject { monitor.check_once }
+
+      let(:before_kill) { instance_double(Proc, call: nil) }
+      let(:monitor) do
+        described_class.new(
+          check_interval: nil,
+          killer: killer,
+          limiters: [limiter],
+          before_kill: before_kill
+        )
+      end
+
+      context 'when limiter is exceeded' do
+        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
+
+        it 'calls before_kill with exceeded limiter' do
+          subject
+          expect(before_kill).to have_received(:call).with(limiter)
+        end
+
+        it 'calls before_kill before killer' do
+          call_order = []
+          allow(before_kill).to receive(:call) { call_order << :before_kill }
+          allow(killer).to receive(:kill!) { call_order << :killer }
+
+          subject
+          expect(call_order).to eq(%i[before_kill killer])
+        end
+      end
+
+      context 'when no limiter is exceeded' do
+        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
+
+        it 'does not call before_kill' do
+          subject
+          expect(before_kill).not_to have_received(:call)
+        end
+      end
+
+      context 'when before_kill raises an exception' do
+        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
+        let(:error) { StandardError.new('before_kill error') }
+
+        before do
+          allow(before_kill).to receive(:call).and_raise(error)
+        end
+
+        it 'still invokes killer' do
+          subject
+          expect(killer).to have_received(:kill!)
+        end
+
+        it 'does not raise error' do
+          expect { subject }.not_to raise_error
+        end
+      end
+
+      context 'when before_kill raises exception with on_exception callback' do
+        subject { monitor.check_once }
+
+        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
+        let(:before_kill) { instance_double(Proc, call: nil) }
+        let(:on_exception) { instance_double(Proc, call: nil) }
+        let(:error) { StandardError.new('before_kill error') }
+        let(:monitor) do
+          described_class.new(
+            check_interval: nil,
+            killer: killer,
+            limiters: [limiter],
+            before_kill: before_kill,
+            on_exception: on_exception
+          )
+        end
+
+        before do
+          allow(before_kill).to receive(:call).and_raise(error)
+        end
+
+        it 'calls on_exception with the error' do
+          subject
+          expect(on_exception).to have_received(:call).with(error)
+        end
+      end
+    end
   end
 
   describe '#seconds_after_last_check' do

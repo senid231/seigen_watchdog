@@ -15,8 +15,9 @@ module SeigenWatchdog
     # @param limiters [Array<Limiters::Base>] array of limiters to check
     # @param logger [Logger, nil] optional logger for debugging
     # @param on_exception [Proc, nil] optional callback when an exception occurs
+    # @param before_kill [Proc, nil] optional callback invoked before killing, receives exceeded limiter
     # @return [Monitor] the monitor instance
-    def start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil)
+    def start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil, before_kill: nil)
       stop if started?
 
       @monitor = Monitor.new(
@@ -24,7 +25,8 @@ module SeigenWatchdog
         killer: killer,
         limiters: limiters,
         logger: logger,
-        on_exception: on_exception
+        on_exception: on_exception,
+        before_kill: before_kill
       )
     end
 

@@ -43,7 +43,8 @@ SeigenWatchdog.start(
     SeigenWatchdog::Limiters::Custom.new(checker: -> { SomeCondition.met? }) # custom condition
  ],
  logger: Logger.new($stdout), # optional logger, logs DEBUG for each check, INFO when killer is invoked
- on_exception: ->(e) { Sentry.capture_exception(e) } # optional exception handler
+ on_exception: ->(e) { Sentry.capture_exception(e) }, # optional exception handler
+ before_kill: ->(limiter) { Prometheus::KillInstrument.send_metrics(limiter.class.name) } # optional callback before kill
 )
   
 # to increment particular count limiter
@@ -63,7 +64,7 @@ SeigenWatchdog.started? # => true or false
 
 ### Module Methods
 
-#### `SeigenWatchdog.start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil)`
+#### `SeigenWatchdog.start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil, before_kill: nil)`
 Starts the watchdog monitor with the specified configuration.
 
 **Parameters:**
@@ -71,7 +72,8 @@ Starts the watchdog monitor with the specified configuration.
 - `killer` - Killer strategy instance (e.g., `SeigenWatchdog::Killers::Signal.new(signal: 'INT')`)
 - `limiters` - Array of limiter instances
 - `logger` - Optional logger instance for debug/info logging
-- `on_exception` - Optional callback proc for exception handling
+- `on_exception` - Optional callback proc for exception handling (receives exception as argument)
+- `before_kill` - Optional callback proc invoked before killing (receives exceeded limiter as argument)
 
 **Returns:** Monitor instance
 
@@ -120,6 +122,51 @@ Custom condition limiter using a proc.
 #### `SeigenWatchdog::Killers::Signal.new(signal:)`
 Terminates the process by sending a signal.
 - `signal` - Signal name as string or symbol (e.g., `'INT'`, `:TERM`)
+
+## Callbacks
+
+### `before_kill` Callback
+
+The `before_kill` callback is invoked immediately before the killer strategy is executed when a limiter exceeds its threshold. This allows you to perform cleanup operations, send metrics, or log information about which limit was exceeded.
+
+**Callback signature:**
+```ruby
+->(exceeded_limiter) { ... }
+```
+
+**Arguments:**
+- `exceeded_limiter` - The limiter instance that exceeded its threshold
+
+**Example use cases:**
+```ruby
+# Send metrics to monitoring system
+before_kill: ->(limiter) {
+  Prometheus::KillInstrument.send_metrics(limiter.class.name)
+}
+
+# Log detailed information
+before_kill: ->(limiter) {
+  Rails.logger.warn("Process killed due to #{limiter.class.name} limit exceeded")
+}
+
+# Send alert
+before_kill: ->(limiter) {
+  Sentry.capture_message("Watchdog killing process: #{limiter.class.name}")
+}
+
+# Perform cleanup based on limiter type
+before_kill: ->(limiter) {
+  case limiter
+  when SeigenWatchdog::Limiters::RSS
+    Rails.logger.warn("Memory limit exceeded: #{limiter.max_rss / 1024 / 1024} MB")
+  when SeigenWatchdog::Limiters::Time
+    Rails.logger.warn("Time limit exceeded: #{limiter.max_duration} seconds")
+  end
+}
+```
+
+**Exception handling:**
+If the `before_kill` callback raises an exception, it will be handled by the `on_exception` callback (if provided) and the killer will still be invoked to ensure the process terminates as expected.
 
 ## Development
 

@@ -10,12 +10,14 @@ module SeigenWatchdog
     # @param limiters [Array<Limiters::Base>] array of limiters to check
     # @param logger [Logger, nil] optional logger for debugging
     # @param on_exception [Proc, nil] optional callback when an exception occurs
-    def initialize(check_interval:, killer:, limiters:, logger: nil, on_exception: nil)
+    # @param before_kill [Proc, nil] optional callback invoked before killing, receives exceeded limiter
+    def initialize(check_interval:, killer:, limiters:, logger: nil, on_exception: nil, before_kill: nil)
       @check_interval = check_interval
       @killer = killer
       @limiters = limiters
       @logger = logger
       @on_exception = on_exception
+      @before_kill = before_kill
       @checks = 0
       @last_check_time = nil
       @thread = nil
@@ -35,17 +37,13 @@ module SeigenWatchdog
     # Performs a single check of all limiters
     # @return [Boolean] true if any limiter exceeded and killer was invoked
     def check_once
-      @mutex.synchronize do
-        @checks += 1
-        @last_check_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      end
-
+      increment_checks
       log_debug("Performing check ##{@checks}")
 
       exceeded_limiter = @limiters.find(&:exceeded?)
-
       if exceeded_limiter
         log_info("Limit exceeded: #{exceeded_limiter.class.name}, invoking killer")
+        run_before_kill(exceeded_limiter)
         @killer.kill!
         true
       else
@@ -85,6 +83,19 @@ module SeigenWatchdog
     end
 
     private
+
+    def run_before_kill(exceeded_limiter)
+      @before_kill&.call(exceeded_limiter)
+    rescue StandardError => e
+      handle_exception(e)
+    end
+
+    def increment_checks
+      @mutex.synchronize do
+        @checks += 1
+        @last_check_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end
+    end
 
     def start_background_thread
       @running = true

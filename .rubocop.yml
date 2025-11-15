@@ -16,10 +16,14 @@ Metrics/MethodLength:
   Max: 20
   Exclude:
     - 'spec/**/*.rb'
+    - 'lib/seigen_watchdog/monitor.rb'
 
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*.rb'
+
+Metrics/ParameterLists:
+  CountKeywordArgs: false
 
 RSpec/NamedSubject:
   Enabled: false

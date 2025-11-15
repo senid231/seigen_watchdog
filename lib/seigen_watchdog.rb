@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 require_relative 'seigen_watchdog/version'
 
 # Monitoring and watchdog module for Ruby applications
@@ -7,16 +9,11 @@ module SeigenWatchdog
   class Error < StandardError; end
 
   class << self
-    attr_reader :monitor
+    # @rbs self.@monitor: Monitor?
+    attr_reader :monitor #: Monitor?
 
     # Starts the SeigenWatchdog monitor
-    # @param check_interval [Numeric, nil] interval in seconds between checks, nil to disable background thread
-    # @param killer [Killers::Base] the killer to invoke when a limit is exceeded
-    # @param limiters [Array<Limiters::Base>] array of limiters to check
-    # @param logger [Logger, nil] optional logger for debugging
-    # @param on_exception [Proc, nil] optional callback when an exception occurs
-    # @param before_kill [Proc, nil] optional callback invoked before killing, receives exceeded limiter
-    # @return [Monitor] the monitor instance
+    # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Array[Limiters::Base]
     def start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil, before_kill: nil)
       stop if started?
 
@@ -31,6 +28,7 @@ module SeigenWatchdog
     end
 
     # Stops the SeigenWatchdog monitor
+    # @rbs return: void
     def stop
       return unless @monitor
 
@@ -39,7 +37,8 @@ module SeigenWatchdog
     end
 
     # Checks if the monitor has been started
-    # @return [Boolean] true if the monitor is started
+    # Returns true if the monitor is started
+    # @rbs return: bool
     def started?
       !@monitor.nil?
     end

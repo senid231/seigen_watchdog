@@ -1,23 +1,19 @@
-# frozen_string_literal: true
-
-# rbs_inline: enabled
+# Generated from lib/seigen_watchdog/limiters/base.rb with RBS::Inline
 
 module SeigenWatchdog
   module Limiters
     # Base class for all limiters
     class Base
       # @rbs return: bool
-      def exceeded?
-        raise NotImplementedError, "#{self.class} must implement #exceeded?"
-      end
+      def exceeded?: () -> bool
 
       # Called when the limiter is started (when monitor initializes)
       # @rbs return: void
-      def started; end
+      def started: () -> void
 
       # Called when the limiter is stopped (when monitor stops)
       # @rbs return: void
-      def stopped; end
+      def stopped: () -> void
     end
   end
 end

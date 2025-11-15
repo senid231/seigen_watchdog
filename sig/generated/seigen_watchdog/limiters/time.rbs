@@ -1,0 +1,29 @@
+# Generated from lib/seigen_watchdog/limiters/time.rb with RBS::Inline
+
+module SeigenWatchdog
+  module Limiters
+    # Limiter based on execution time
+    class Time < Base
+      attr_reader start_time: Float?
+
+      attr_reader max_duration: Numeric
+
+      # @rbs @max_duration: Numeric
+      # @rbs @start_time: Float?
+      # @rbs max_duration: Numeric
+      def initialize: (max_duration: Numeric) -> untyped
+
+      # Called when monitor starts - records the start time
+      # @rbs return: void
+      def started: () -> void
+
+      # @rbs return: bool
+      def exceeded?: () -> bool
+
+      private
+
+      # @rbs return: Float
+      def elapsed_time: () -> Float
+    end
+  end
+end

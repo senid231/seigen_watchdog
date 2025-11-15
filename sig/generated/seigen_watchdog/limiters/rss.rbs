@@ -1,0 +1,18 @@
+# Generated from lib/seigen_watchdog/limiters/rss.rb with RBS::Inline
+
+module SeigenWatchdog
+  module Limiters
+    # Limiter based on RSS memory usage
+    class RSS < Base
+      attr_reader max_rss: Integer
+
+      # @rbs @max_rss: Integer
+      # @rbs @mem: GetProcessMem
+      # @rbs max_rss: Integer
+      def initialize: (max_rss: Integer) -> untyped
+
+      # @rbs return: bool
+      def exceeded?: () -> bool
+    end
+  end
+end

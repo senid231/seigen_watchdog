@@ -1,0 +1,5 @@
+# Generated from lib/seigen_watchdog/version.rb with RBS::Inline
+
+module SeigenWatchdog
+  VERSION: String
+end

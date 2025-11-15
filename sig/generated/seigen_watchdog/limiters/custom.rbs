@@ -1,6 +1,4 @@
-# frozen_string_literal: true
-
-# rbs_inline: enabled
+# Generated from lib/seigen_watchdog/limiters/custom.rb with RBS::Inline
 
 module SeigenWatchdog
   module Limiters
@@ -8,15 +6,10 @@ module SeigenWatchdog
     class Custom < Base
       # @rbs @checker: Proc | #call
       # @rbs checker: Proc | #call
-      def initialize(checker:)
-        super()
-        @checker = checker
-      end
+      def initialize: (checker: untyped) -> untyped
 
       # @rbs return: bool
-      def exceeded?
-        @checker.call
-      end
+      def exceeded?: () -> bool
     end
   end
 end

@@ -1,16 +1,37 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 module SeigenWatchdog
   # Monitor class that checks limiters and invokes the killer when needed
   class Monitor
-    attr_reader :checks
+    # @rbs @check_interval: Numeric?
+    # @rbs @killer: Killers::Base
+    # @rbs @limiters: Array[Limiters::Base]
+    # @rbs @logger: Logger?
+    # @rbs @on_exception: Proc?
+    # @rbs @before_kill: Proc?
+    # @rbs @checks: Integer
+    # @rbs @last_check_time: Float? | nil
+    # @rbs @thread: Thread? | nil
+    # @rbs @running: bool
+    # @rbs @mutex: Thread::Mutex
 
-    # @param check_interval [Numeric, nil] interval in seconds between checks, nil to disable background thread
-    # @param killer [Killers::Base] the killer to invoke when a limit is exceeded
-    # @param limiters [Array<Limiters::Base>] array of limiters to check
-    # @param logger [Logger, nil] optional logger for debugging
-    # @param on_exception [Proc, nil] optional callback when an exception occurs
-    # @param before_kill [Proc, nil] optional callback invoked before killing, receives exceeded limiter
+    attr_reader :checks #: Integer
+
+    # Interval in seconds between checks, nil to disable background thread
+    # @rbs check_interval: Numeric?
+    # The killer to invoke when a limit is exceeded
+    # @rbs killer: Killers::Base
+    # Array of limiters to check
+    # @rbs limiters: Array[Limiters::Base]
+    # Optional logger for debugging
+    # @rbs logger: Logger?
+    # Optional callback when an exception occurs
+    # @rbs on_exception: Proc?
+    # Optional callback invoked before killing, receives exceeded limiter
+    # @rbs before_kill: Proc?
+    # @rbs return: void
     def initialize(check_interval:, killer:, limiters:, logger: nil, on_exception: nil, before_kill: nil)
       @check_interval = check_interval
       @killer = killer
@@ -35,7 +56,8 @@ module SeigenWatchdog
     end
 
     # Performs a single check of all limiters
-    # @return [Boolean] true if any limiter exceeded and killer was invoked
+    # Returns true if any limiter exceeded and killer was invoked
+    # @rbs return: bool
     def check_once
       increment_checks
       log_debug("Performing check ##{@checks}")
@@ -56,7 +78,8 @@ module SeigenWatchdog
     end
 
     # Returns the number of seconds since the last check
-    # @return [Float, nil] seconds since last check, or nil if no check has been performed
+    # Seconds since last check, or nil if no check has been performed
+    # @rbs return: Float?
     def seconds_after_last_check
       return nil if @last_check_time.nil?
 
@@ -64,6 +87,7 @@ module SeigenWatchdog
     end
 
     # Stops the background thread if running
+    # @rbs return: void
     def stop
       if @thread
         @mutex.synchronize { @running = false }
@@ -77,7 +101,8 @@ module SeigenWatchdog
     end
 
     # Checks if the background thread is running
-    # @return [Boolean] true if the background thread is running
+    # Returns true if the background thread is running
+    # @rbs return: bool
     def running?
       @running && @thread&.alive?
     end

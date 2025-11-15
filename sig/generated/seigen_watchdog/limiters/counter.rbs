@@ -1,0 +1,47 @@
+# Generated from lib/seigen_watchdog/limiters/counter.rb with RBS::Inline
+
+module SeigenWatchdog
+  module Limiters
+    # Limiter based on iteration count
+    class Counter < Base
+      # @rbs REGISTRY: Registry
+      REGISTRY: untyped
+
+      # Increments the counter for the given name
+      # @rbs name: Symbol | String
+      # @rbs return: void
+      def self.increment: (Symbol | String name) -> void
+
+      # Decrements the counter for the given name
+      # @rbs name: Symbol | String
+      # @rbs return: void
+      def self.decrement: (Symbol | String name) -> void
+
+      # Resets the counter for the given name to 0
+      # @param name [Symbol, String] the name of the counter
+      # @raise [Registry::NotFoundError] if the counter doesn't exist
+      def self.reset: (untyped name) -> untyped
+
+      attr_reader name: Symbol | String
+
+      attr_reader max_count: Integer
+
+      # @param name [Symbol, String] the name of the counter
+      # @param max_count [Integer] maximum count allowed
+      def initialize: (untyped name, max_count: untyped) -> untyped
+
+      # Called when monitor starts - creates/resets the counter in registry
+      def started: () -> untyped
+
+      # Called when monitor stops - removes the counter from registry
+      def stopped: () -> untyped
+
+      # @return [Boolean] true if current count exceeds or equals the maximum
+      def exceeded?: () -> untyped
+
+      private
+
+      def current_count: () -> untyped
+    end
+  end
+end

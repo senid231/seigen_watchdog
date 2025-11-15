@@ -1,28 +1,40 @@
 # frozen_string_literal: true
 
+# rbs_inline: enabled
+
 module SeigenWatchdog
   module Limiters
     # Limiter based on execution time
     class Time < Base
-      # @param max_duration [Numeric] maximum duration in seconds
+      attr_reader :start_time #: Float?
+      attr_reader :max_duration #: Numeric
+
+      # @rbs @max_duration: Numeric
+      # @rbs @start_time: Float?
+      # @rbs max_duration: Numeric
       def initialize(max_duration:)
         super()
         @max_duration = max_duration
+        @start_time = nil
       end
 
       # Called when monitor starts - records the start time
+      # @rbs return: void
       def started
         @start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
-      # @return [Boolean] true if elapsed time exceeds the maximum duration
+      # @rbs return: bool
       def exceeded?
         elapsed_time >= @max_duration
       end
 
       private
 
+      # @rbs return: Float
       def elapsed_time
+        return 0.0 if @start_time.nil?
+
         Process.clock_gettime(Process::CLOCK_MONOTONIC) - @start_time
       end
     end

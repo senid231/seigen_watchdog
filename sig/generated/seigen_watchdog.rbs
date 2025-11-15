@@ -1,0 +1,23 @@
+# Generated from lib/seigen_watchdog.rb with RBS::Inline
+
+# Monitoring and watchdog module for Ruby applications
+module SeigenWatchdog
+  class Error < StandardError
+  end
+
+  # @rbs self.@monitor: Monitor?
+  attr_reader monitor: Monitor?
+
+  # Starts the SeigenWatchdog monitor
+  # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Array[Limiters::Base]
+  def self.start: (check_interval: Numeric?, killer: untyped, limiters: untyped, ?logger: untyped, ?on_exception: untyped, ?before_kill: untyped) -> untyped
+
+  # Stops the SeigenWatchdog monitor
+  # @rbs return: void
+  def self.stop: () -> void
+
+  # Checks if the monitor has been started
+  # Returns true if the monitor is started
+  # @rbs return: bool
+  def self.started?: () -> bool
+end

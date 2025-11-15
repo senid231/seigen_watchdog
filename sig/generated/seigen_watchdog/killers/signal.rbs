@@ -1,25 +1,18 @@
-# frozen_string_literal: true
-
-# rbs_inline: enabled
+# Generated from lib/seigen_watchdog/killers/signal.rb with RBS::Inline
 
 module SeigenWatchdog
   module Killers
     # Killer that sends a signal to the current process
     class Signal < Base
-      attr_reader :signal #: String
+      attr_reader signal: String
 
       # @rbs @signal: String
       # @rbs signal: String | Symbol
-      def initialize(signal:)
-        super()
-        @signal = signal.to_s
-      end
+      def initialize: (signal: String | Symbol) -> untyped
 
       # Sends the signal to the current process
       # @rbs return: void
-      def kill!
-        Process.kill(@signal, Process.pid)
-      end
+      def kill!: () -> void
     end
   end
 end

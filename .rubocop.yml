@@ -25,6 +25,9 @@ Metrics/BlockLength:
 Metrics/ParameterLists:
   CountKeywordArgs: false
 
+Layout/LeadingCommentSpace:
+  AllowRBSInlineAnnotation: true
+
 RSpec/NamedSubject:
   Enabled: false
 

@@ -1,0 +1,11 @@
+# Generated from lib/seigen_watchdog/killers/base.rb with RBS::Inline
+
+module SeigenWatchdog
+  module Killers
+    # Base class for all killers
+    class Base
+      # @rbs return: void
+      def kill!: () -> void
+    end
+  end
+end

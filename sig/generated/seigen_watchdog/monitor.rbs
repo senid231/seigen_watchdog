@@ -1,0 +1,82 @@
+# Generated from lib/seigen_watchdog/monitor.rb with RBS::Inline
+
+module SeigenWatchdog
+  # Monitor class that checks limiters and invokes the killer when needed
+  class Monitor
+    @mutex: Thread::Mutex
+
+    @running: bool
+
+    @thread: Thread? | nil
+
+    @last_check_time: Float? | nil
+
+    @checks: Integer
+
+    @before_kill: Proc?
+
+    @on_exception: Proc?
+
+    @logger: Logger?
+
+    @limiters: Array[Limiters::Base]
+
+    @killer: Killers::Base
+
+    @check_interval: Numeric?
+
+    attr_reader checks: Integer
+
+    # Interval in seconds between checks, nil to disable background thread
+    # @rbs check_interval: Numeric?
+    # The killer to invoke when a limit is exceeded
+    # @rbs killer: Killers::Base
+    # Array of limiters to check
+    # @rbs limiters: Array[Limiters::Base]
+    # Optional logger for debugging
+    # @rbs logger: Logger?
+    # Optional callback when an exception occurs
+    # @rbs on_exception: Proc?
+    # Optional callback invoked before killing, receives exceeded limiter
+    # @rbs before_kill: Proc?
+    # @rbs return: void
+    def initialize: (check_interval: Numeric?, killer: Killers::Base, limiters: Array[Limiters::Base], ?logger: Logger?, ?on_exception: Proc?, ?before_kill: Proc?) -> void
+
+    # Performs a single check of all limiters
+    # Returns true if any limiter exceeded and killer was invoked
+    # @rbs return: bool
+    def check_once: () -> bool
+
+    # Returns the number of seconds since the last check
+    # Seconds since last check, or nil if no check has been performed
+    # @rbs return: Float?
+    def seconds_after_last_check: () -> Float?
+
+    # Stops the background thread if running
+    # @rbs return: void
+    def stop: () -> void
+
+    # Checks if the background thread is running
+    # Returns true if the background thread is running
+    # @rbs return: bool
+    def running?: () -> bool
+
+    private
+
+    def run_before_kill: (untyped exceeded_limiter) -> untyped
+
+    def increment_checks: () -> untyped
+
+    def start_background_thread: () -> untyped
+
+    def background_loop: () -> untyped
+
+    def handle_exception: (untyped exception) -> untyped
+
+    def log_debug: (untyped message) -> untyped
+
+    def log_info: (untyped message) -> untyped
+
+    def log_error: (untyped message) -> untyped
+  end
+end

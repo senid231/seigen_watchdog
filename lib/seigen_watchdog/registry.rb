@@ -39,10 +39,11 @@ module SeigenWatchdog
 
     # Deletes the entry with the given name
     # @param name [Symbol, String] the name of the entry
-    # @raise [NotFoundError] if the name doesn't exist
-    def delete(name)
+    # @param safe [Boolean] if true, don't raise error if entry doesn't exist (default: false)
+    # @raise [NotFoundError] if the name doesn't exist and safe is false
+    def delete(name, safe: false)
       @mutex.synchronize do
-        raise NotFoundError, "Entry '#{name}' not found" unless @data.key?(name)
+        raise NotFoundError, "Entry '#{name}' not found" unless @data.key?(name) || safe
 
         @data.delete(name)
       end

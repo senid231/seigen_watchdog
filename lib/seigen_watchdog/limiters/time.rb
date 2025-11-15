@@ -8,6 +8,10 @@ module SeigenWatchdog
       def initialize(max_duration:)
         super()
         @max_duration = max_duration
+      end
+
+      # Called when monitor starts - records the start time
+      def started
         @start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 

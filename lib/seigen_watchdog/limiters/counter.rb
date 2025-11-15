@@ -31,12 +31,23 @@ module SeigenWatchdog
 
       # @param name [Symbol, String] the name of the counter
       # @param max_count [Integer] maximum count allowed
-      # @raise [Registry::AlreadyExistsError] if a counter with this name already exists
       def initialize(name, max_count:)
         super()
         @name = name
         @max_count = max_count
-        REGISTRY.create(name, 0)
+      end
+
+      # Called when monitor starts - creates/resets the counter in registry
+      def started
+        # Delete existing counter if present (handles reusing same limiter instance)
+        REGISTRY.delete(@name, safe: true)
+        # Create fresh counter at 0
+        REGISTRY.create(@name, 0)
+      end
+
+      # Called when monitor stops - removes the counter from registry
+      def stopped
+        REGISTRY.delete(@name, safe: true)
       end
 
       # @return [Boolean] true if current count exceeds or equals the maximum

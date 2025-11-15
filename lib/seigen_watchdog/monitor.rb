@@ -22,6 +22,9 @@ module SeigenWatchdog
       @running = false
       @mutex = Mutex.new
 
+      # Call started on all limiters to initialize their state
+      @limiters.each(&:started)
+
       if @check_interval
         start_background_thread
       else
@@ -64,12 +67,15 @@ module SeigenWatchdog
 
     # Stops the background thread if running
     def stop
-      return unless @thread
+      if @thread
+        @mutex.synchronize { @running = false }
+        @thread.join(5) # Wait up to 5 seconds for thread to finish
+        @thread = nil
+        log_debug('Monitor stopped')
+      end
 
-      @mutex.synchronize { @running = false }
-      @thread.join(5) # Wait up to 5 seconds for thread to finish
-      @thread = nil
-      log_debug('Monitor stopped')
+      # Call stopped on all limiters to clean up their state
+      @limiters.each(&:stopped)
     end
 
     # Checks if the background thread is running

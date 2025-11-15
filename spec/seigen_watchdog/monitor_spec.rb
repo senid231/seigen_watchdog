@@ -4,7 +4,7 @@ require 'logger'
 
 RSpec.describe SeigenWatchdog::Monitor do
   let(:killer) { instance_double(SeigenWatchdog::Killers::Signal, kill!: nil) }
-  let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false) }
+  let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
   let(:logger) { nil }
   let(:on_exception) { nil }
 
@@ -37,6 +37,106 @@ RSpec.describe SeigenWatchdog::Monitor do
         expect(monitor.running?).to be false
       end
     end
+
+    context 'with limiters' do
+      subject do
+        described_class.new(
+          check_interval: check_interval,
+          killer: killer,
+          limiters: limiters
+        )
+      end
+
+      let(:check_interval) { nil }
+      let(:first_limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
+      let(:second_limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
+      let(:limiters) { [first_limiter, second_limiter] }
+
+      it 'calls started on all limiters' do
+        subject
+        expect(first_limiter).to have_received(:started)
+        expect(second_limiter).to have_received(:started)
+      end
+    end
+
+    context 'when initialized and stopped with same limiter instances' do
+      let(:check_interval) { nil }
+      let(:limiters) do
+        [
+          SeigenWatchdog::Limiters::Counter.new(:test_counter1, max_count: 10),
+          SeigenWatchdog::Limiters::Counter.new(:test_counter2, max_count: 20),
+          SeigenWatchdog::Limiters::Time.new(max_duration: 60),
+          SeigenWatchdog::Limiters::RSS.new(max_rss: 1024 * 1024 * 100),
+          SeigenWatchdog::Limiters::Custom.new(checker: -> { false })
+        ]
+      end
+
+      after do
+        # Cleanup registry
+        SeigenWatchdog::Limiters::Counter::REGISTRY.delete(:test_counter1, safe: true)
+        SeigenWatchdog::Limiters::Counter::REGISTRY.delete(:test_counter2, safe: true)
+      end
+
+      it 'allows reusing same limiter instances across monitor lifecycles' do
+        # First monitor
+        monitor1 = described_class.new(
+          check_interval: check_interval,
+          killer: killer,
+          limiters: limiters
+        )
+        monitor1.stop
+
+        # Second monitor with same limiter instances (same array object)
+        expect do
+          described_class.new(
+            check_interval: check_interval,
+            killer: killer,
+            limiters: limiters
+          )
+        end.not_to raise_error
+      end
+    end
+
+    context 'when initialized and stopped with new limiters with same config' do
+      let(:check_interval) { nil }
+
+      after do
+        # Cleanup registry
+        SeigenWatchdog::Limiters::Counter::REGISTRY.delete(:test_counter1, safe: true)
+        SeigenWatchdog::Limiters::Counter::REGISTRY.delete(:test_counter2, safe: true)
+      end
+
+      it 'allows creating new limiters with same name after stop' do
+        # First monitor with all types of limiters
+        monitor1 = described_class.new(
+          check_interval: check_interval,
+          killer: killer,
+          limiters: [
+            SeigenWatchdog::Limiters::Counter.new(:test_counter1, max_count: 10),
+            SeigenWatchdog::Limiters::Counter.new(:test_counter2, max_count: 20),
+            SeigenWatchdog::Limiters::Time.new(max_duration: 60),
+            SeigenWatchdog::Limiters::RSS.new(max_rss: 1024 * 1024 * 100),
+            SeigenWatchdog::Limiters::Custom.new(checker: -> { false })
+          ]
+        )
+        monitor1.stop
+
+        # Second monitor with new limiter instances using same names/config
+        expect do
+          described_class.new(
+            check_interval: check_interval,
+            killer: killer,
+            limiters: [
+              SeigenWatchdog::Limiters::Counter.new(:test_counter1, max_count: 15),
+              SeigenWatchdog::Limiters::Counter.new(:test_counter2, max_count: 25),
+              SeigenWatchdog::Limiters::Time.new(max_duration: 120),
+              SeigenWatchdog::Limiters::RSS.new(max_rss: 1024 * 1024 * 200),
+              SeigenWatchdog::Limiters::Custom.new(checker: -> { true })
+            ]
+          )
+        end.not_to raise_error
+      end
+    end
   end
 
   describe '#check_once' do
@@ -57,7 +157,7 @@ RSpec.describe SeigenWatchdog::Monitor do
     end
 
     context 'when no limiter exceeded' do
-      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false) }
+      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
 
       it 'does not invoke killer' do
         subject
@@ -70,7 +170,7 @@ RSpec.describe SeigenWatchdog::Monitor do
     end
 
     context 'when a limiter is exceeded' do
-      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true) }
+      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
 
       it 'invokes killer' do
         subject
@@ -83,7 +183,7 @@ RSpec.describe SeigenWatchdog::Monitor do
     end
 
     context 'when limiter raises an exception' do
-      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base) }
+      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, started: nil, stopped: nil) }
 
       before do
         allow(limiter).to receive(:exceeded?).and_raise(StandardError, 'test error')
@@ -107,7 +207,7 @@ RSpec.describe SeigenWatchdog::Monitor do
       end
 
       context 'when killer is invoked' do
-        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true) }
+        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
 
         it 'logs info message' do
           subject
@@ -118,7 +218,7 @@ RSpec.describe SeigenWatchdog::Monitor do
 
     context 'with on_exception callback' do
       let(:on_exception) { instance_double(Proc, call: nil) }
-      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base) }
+      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, started: nil, stopped: nil) }
       let(:error) { StandardError.new('test error') }
 
       before do
@@ -168,6 +268,37 @@ RSpec.describe SeigenWatchdog::Monitor do
       subject
       expect(monitor.running?).to be false
     end
+
+    context 'with multiple limiters' do
+      let(:first_limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
+      let(:second_limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
+      let(:limiters) { [first_limiter, second_limiter] }
+
+      let(:monitor) do
+        described_class.new(check_interval: nil, killer: killer, limiters: limiters)
+      end
+
+      it 'calls stopped on all limiters' do
+        subject
+        expect(first_limiter).to have_received(:stopped)
+        expect(second_limiter).to have_received(:stopped)
+      end
+    end
+
+    context 'when called multiple times' do
+      let(:single_limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: false, started: nil, stopped: nil) }
+
+      let(:monitor) do
+        described_class.new(check_interval: nil, killer: killer, limiters: [single_limiter])
+      end
+
+      it 'calls stopped on limiters each time' do
+        monitor.stop
+        monitor.stop
+
+        expect(single_limiter).to have_received(:stopped).twice
+      end
+    end
   end
 
   describe 'background thread behavior' do
@@ -187,7 +318,7 @@ RSpec.describe SeigenWatchdog::Monitor do
       end
 
       context 'when limiter exceeds in background' do
-        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base) }
+        let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, started: nil, stopped: nil) }
 
         before do
           allow(limiter).to receive(:exceeded?).and_return(false, false, true)

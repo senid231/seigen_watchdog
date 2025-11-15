@@ -10,89 +10,94 @@ RSpec.describe SeigenWatchdog do
   end
 
   describe '.start' do
-    it 'starts the monitor' do
-      killer = SeigenWatchdog::Killers::Signal.new(signal: 'INT')
-      limiters = [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)]
+    subject { SeigenWatchdog.start(check_interval: check_interval, killer: killer, limiters: limiters) }
 
-      monitor = SeigenWatchdog.start(
-        check_interval: 1,
-        killer: killer,
-        limiters: limiters
-      )
+    let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
+    let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
 
-      expect(monitor).to be_a(SeigenWatchdog::Monitor)
-      expect(SeigenWatchdog.started?).to be true
-      expect(SeigenWatchdog.monitor).to eq(monitor)
+    context 'with background thread' do
+      let(:check_interval) { 1 }
+
+      it 'starts the monitor and returns it' do
+        monitor = subject
+        expect(monitor).to be_a(SeigenWatchdog::Monitor)
+        expect(SeigenWatchdog.started?).to be true
+        expect(SeigenWatchdog.monitor).to eq(monitor)
+      end
     end
 
-    it 'starts without background thread when check_interval is nil' do
-      killer = SeigenWatchdog::Killers::Signal.new(signal: 'INT')
-      limiters = [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)]
+    context 'without background thread' do
+      let(:check_interval) { nil }
 
-      monitor = SeigenWatchdog.start(
-        check_interval: nil,
-        killer: killer,
-        limiters: limiters
-      )
-
-      expect(monitor).to be_a(SeigenWatchdog::Monitor)
-      expect(monitor.running?).to be false
+      it 'starts the monitor without running background thread' do
+        monitor = subject
+        expect(monitor).to be_a(SeigenWatchdog::Monitor)
+        expect(monitor.running?).to be false
+      end
     end
   end
 
   describe '.stop' do
+    subject { SeigenWatchdog.stop }
+
+    let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
+    let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
+
+    before do
+      SeigenWatchdog.start(check_interval: 1, killer: killer, limiters: limiters)
+    end
+
     it 'stops the monitor' do
-      killer = SeigenWatchdog::Killers::Signal.new(signal: 'INT')
-      limiters = [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)]
-
-      SeigenWatchdog.start(
-        check_interval: 1,
-        killer: killer,
-        limiters: limiters
-      )
-
-      SeigenWatchdog.stop
-
+      subject
       expect(SeigenWatchdog.started?).to be false
       expect(SeigenWatchdog.monitor).to be_nil
     end
   end
 
   describe '.started?' do
-    it 'returns false when not started' do
-      expect(SeigenWatchdog.started?).to be false
+    subject { SeigenWatchdog.started? }
+
+    context 'when not started' do
+      it 'returns false' do
+        expect(subject).to be false
+      end
     end
 
-    it 'returns true when started' do
-      killer = SeigenWatchdog::Killers::Signal.new(signal: 'INT')
-      limiters = [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)]
+    context 'when started' do
+      let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
+      let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
 
-      SeigenWatchdog.start(
-        check_interval: 1,
-        killer: killer,
-        limiters: limiters
-      )
+      before do
+        SeigenWatchdog.start(check_interval: 1, killer: killer, limiters: limiters)
+      end
 
-      expect(SeigenWatchdog.started?).to be true
+      it 'returns true' do
+        expect(subject).to be true
+      end
     end
   end
 
   describe '.monitor' do
-    it 'returns nil when not started' do
-      expect(SeigenWatchdog.monitor).to be_nil
+    subject { SeigenWatchdog.monitor }
+
+    context 'when not started' do
+      it 'returns nil' do
+        expect(subject).to be_nil
+      end
     end
 
-    it 'returns the monitor instance when started' do
-      killer = SeigenWatchdog::Killers::Signal.new(signal: 'INT')
-      limiters = [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)]
+    context 'when started' do
+      let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
+      let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
+      let(:monitor) { SeigenWatchdog.start(check_interval: 1, killer: killer, limiters: limiters) }
 
-      monitor = SeigenWatchdog.start(
-        check_interval: 1,
-        killer: killer,
-        limiters: limiters
-      )
+      before do
+        monitor
+      end
 
-      expect(SeigenWatchdog.monitor).to eq(monitor)
+      it 'returns the monitor instance' do
+        expect(subject).to eq(monitor)
+      end
     end
   end
 end

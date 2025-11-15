@@ -46,7 +46,7 @@ module SeigenWatchdog
         @killer.kill!
         true
       else
-        log_debug("All limiters within bounds")
+        log_debug('All limiters within bounds')
         false
       end
     rescue StandardError => e

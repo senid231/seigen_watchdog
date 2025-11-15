@@ -21,13 +21,20 @@ If bundler is not being used to manage dependencies, install the gem by executin
 gem install seigen_watchdog
 ```
 
+## Requirements
+
+- Ruby >= 3.3.0
+- Dependencies:
+  - `get_process_mem` - for RSS memory monitoring
+  - `logger` - for optional debug logging
+
 ## Usage
 
 ```ruby
 require 'seigen_watchdog'
 
-SeigenWatchdog.setup(
- check_interval: 5, # seconds
+SeigenWatchdog.start(
+ check_interval: 5, # seconds or nil for no periodic checks
  killer: SeigenWatchdog::Killers::Signal.new(signal: 'INT'),
  limiters: [
     SeigenWatchdog::Limiters::RSS.new(max_rss: 200 * 1024 * 1024), # 200 MB
@@ -39,9 +46,80 @@ SeigenWatchdog.setup(
  on_exception: ->(e) { Sentry.capture_exception(e) } # optional exception handler
 )
   
-# somewhere in your application code here
+# to increment particular count limiter
 SeigenWatchdog::Limiters::Counter.increment(:main) # Example of incrementing the counter limiter
+
+# to perform check manually (if check_interval is nil)
+SeigenWatchdog.monitor.check_once
+
+# to stop the watchdog
+SeigenWatchdog.stop
+
+# to check if watchdog is running
+SeigenWatchdog.started? # => true or false
 ```
+
+## API Reference
+
+### Module Methods
+
+#### `SeigenWatchdog.start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil)`
+Starts the watchdog monitor with the specified configuration.
+
+**Parameters:**
+- `check_interval` - Interval in seconds between checks, or `nil` for manual checks only
+- `killer` - Killer strategy instance (e.g., `SeigenWatchdog::Killers::Signal.new(signal: 'INT')`)
+- `limiters` - Array of limiter instances
+- `logger` - Optional logger instance for debug/info logging
+- `on_exception` - Optional callback proc for exception handling
+
+**Returns:** Monitor instance
+
+#### `SeigenWatchdog.stop`
+Stops the watchdog monitor and terminates the background thread.
+
+#### `SeigenWatchdog.started?`
+Returns `true` if the watchdog is currently running, `false` otherwise.
+
+#### `SeigenWatchdog.monitor`
+Returns the current monitor instance, or `nil` if not started.
+
+### Monitor Instance Methods
+
+#### `monitor.check_once`
+Performs a single manual check of all limiters. Useful when `check_interval` is `nil`.
+
+**Returns:** `true` if a limit was exceeded and killer was invoked, `false` otherwise.
+
+### Limiters
+
+#### `SeigenWatchdog::Limiters::RSS.new(max_rss:)`
+Monitors RSS (Resident Set Size) memory usage.
+- `max_rss` - Maximum RSS in bytes
+
+#### `SeigenWatchdog::Limiters::Time.new(max_duration:)`
+Monitors execution time since limiter creation.
+- `max_duration` - Maximum duration in seconds
+
+#### `SeigenWatchdog::Limiters::Counter.new(name, max_count:)`
+Monitors iteration count with manual incrementing.
+- `name` - Symbol identifier for the counter
+- `max_count` - Maximum count before exceeding
+
+**Class Methods:**
+- `Counter.increment(name)` - Increments the counter
+- `Counter.decrement(name)` - Decrements the counter
+- `Counter.reset(name)` - Resets the counter to 0
+
+#### `SeigenWatchdog::Limiters::Custom.new(checker:)`
+Custom condition limiter using a proc.
+- `checker` - Proc that returns `true` when limit is exceeded
+
+### Killers
+
+#### `SeigenWatchdog::Killers::Signal.new(signal:)`
+Terminates the process by sending a signal.
+- `signal` - Signal name as string or symbol (e.g., `'INT'`, `:TERM`)
 
 ## Development
 

@@ -44,7 +44,7 @@ SeigenWatchdog.start(
  },
  logger: Logger.new($stdout), # optional logger, logs DEBUG for each check, INFO when killer is invoked
  on_exception: ->(e) { Sentry.capture_exception(e) }, # optional exception handler
- before_kill: ->(limiter) { Prometheus::KillInstrument.send_metrics(limiter.class.name) } # optional callback before kill
+ before_kill: ->(name, limiter) { Prometheus::KillInstrument.send_metrics(name, limiter.class.name) } # optional callback before kill
 )
 
 # to increment particular count limiter
@@ -74,7 +74,7 @@ Starts the watchdog monitor with the specified configuration.
 - `limiters` - Hash of limiter instances (keys are limiter names, values are limiter instances)
 - `logger` - Optional logger instance for debug/info logging
 - `on_exception` - Optional callback proc for exception handling (receives exception as argument)
-- `before_kill` - Optional callback proc invoked before killing (receives exceeded limiter as argument)
+- `before_kill` - Optional callback proc invoked before killing (receives limiter name and limiter instance as arguments)
 
 **Returns:** Monitor instance
 
@@ -108,6 +108,21 @@ Returns a limiter instance by its name.
 Returns a hash of all limiters. Modifications to the returned hash won't affect internal state, but limiter instances are shared.
 
 **Returns:** Hash of limiters (keys are names, values are limiter instances)
+
+#### `monitor.killed?`
+Returns whether the killer has been invoked.
+
+**Returns:** `true` if killer was invoked, `false` otherwise.
+
+#### `monitor.seconds_since_killed`
+Returns the number of seconds elapsed since the killer was invoked.
+
+**Returns:** Float representing seconds since kill, or `nil` if killer has not been invoked.
+
+#### `monitor.seconds_after_last_check`
+Returns the number of seconds elapsed since the last check was performed.
+
+**Returns:** Float representing seconds since last check, or `nil` if no check has been performed.
 
 ### Limiters
 
@@ -163,36 +178,37 @@ The `before_kill` callback is invoked immediately before the killer strategy is 
 
 **Callback signature:**
 ```ruby
-->(exceeded_limiter) { ... }
+->(name, limiter) { ... }
 ```
 
 **Arguments:**
-- `exceeded_limiter` - The limiter instance that exceeded its threshold
+- `name` - Symbol representing the limiter name (e.g., `:rss`, `:time`, `:jobs`)
+- `limiter` - The limiter instance that exceeded its threshold
 
 **Example use cases:**
 ```ruby
 # Send metrics to monitoring system
-before_kill: ->(limiter) {
-  Prometheus::KillInstrument.send_metrics(limiter.class.name)
+before_kill: ->(name, limiter) {
+  Prometheus::KillInstrument.send_metrics(name, limiter.class.name)
 }
 
-# Log detailed information
-before_kill: ->(limiter) {
-  Rails.logger.warn("Process killed due to #{limiter.class.name} limit exceeded")
+# Log detailed information with limiter name
+before_kill: ->(name, limiter) {
+  Rails.logger.warn("Process killed due to #{name} (#{limiter.class.name}) limit exceeded")
 }
 
-# Send alert
-before_kill: ->(limiter) {
-  Sentry.capture_message("Watchdog killing process: #{limiter.class.name}")
+# Send alert with limiter name
+before_kill: ->(name, limiter) {
+  Sentry.capture_message("Watchdog killing process: #{name}")
 }
 
 # Perform cleanup based on limiter type
-before_kill: ->(limiter) {
+before_kill: ->(name, limiter) {
   case limiter
   when SeigenWatchdog::Limiters::RSS
-    Rails.logger.warn("Memory limit exceeded: #{limiter.max_rss / 1024 / 1024} MB")
+    Rails.logger.warn("Memory limit exceeded (#{name}): #{limiter.max_rss / 1024 / 1024} MB")
   when SeigenWatchdog::Limiters::Time
-    Rails.logger.warn("Time limit exceeded: #{limiter.max_duration} seconds")
+    Rails.logger.warn("Time limit exceeded (#{name}): #{limiter.max_duration} seconds")
   end
 }
 ```

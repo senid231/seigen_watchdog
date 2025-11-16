@@ -170,6 +170,23 @@ RSpec.describe SeigenWatchdog::Monitor do
       end
     end
 
+    context 'when a limiter is exceeded multiple times' do
+      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
+
+      it 'invokes killer only once' do
+        monitor.check_once
+        monitor.check_once
+        monitor.check_once
+        expect(killer).to have_received(:kill!).once
+      end
+
+      it 'returns true on all checks' do
+        expect(monitor.check_once).to be true
+        expect(monitor.check_once).to be true
+        expect(monitor.check_once).to be true
+      end
+    end
+
     context 'when limiter raises an exception' do
       let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, started: nil, stopped: nil) }
 
@@ -235,9 +252,9 @@ RSpec.describe SeigenWatchdog::Monitor do
       context 'when limiter is exceeded' do
         let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
 
-        it 'calls before_kill with exceeded limiter' do
+        it 'calls before_kill with limiter name and instance' do
           subject
-          expect(before_kill).to have_received(:call).with(limiter)
+          expect(before_kill).to have_received(:call).with(:main, limiter)
         end
 
         it 'calls before_kill before killer' do
@@ -467,6 +484,59 @@ RSpec.describe SeigenWatchdog::Monitor do
       returned_hash[:third] = instance_double(SeigenWatchdog::Limiters::Base)
 
       expect(monitor.limiters.keys).to eq(%i[first second])
+    end
+  end
+
+  describe '#killed?' do
+    subject { monitor.killed? }
+
+    let(:monitor) do
+      described_class.new(check_interval: nil, killer: killer, limiters: { main: limiter })
+    end
+
+    context 'when killer has not been invoked' do
+      it 'returns false' do
+        expect(subject).to be false
+      end
+    end
+
+    context 'when killer has been invoked' do
+      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
+
+      before do
+        monitor.check_once
+      end
+
+      it 'returns true' do
+        expect(subject).to be true
+      end
+    end
+  end
+
+  describe '#seconds_since_killed' do
+    subject { monitor.seconds_since_killed }
+
+    let(:monitor) do
+      described_class.new(check_interval: nil, killer: killer, limiters: { main: limiter })
+    end
+
+    context 'when killer has not been invoked' do
+      it 'returns nil' do
+        expect(subject).to be_nil
+      end
+    end
+
+    context 'when killer has been invoked' do
+      let(:limiter) { instance_double(SeigenWatchdog::Limiters::Base, exceeded?: true, started: nil, stopped: nil) }
+
+      before do
+        monitor.check_once
+        sleep 0.05
+      end
+
+      it 'returns time elapsed' do
+        expect(subject).to be >= 0.05
+      end
     end
   end
 end

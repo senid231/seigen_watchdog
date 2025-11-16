@@ -4,11 +4,13 @@ module SeigenWatchdog
   module Killers
     # Killer that sends a signal to the current process
     class Signal < Base
+      @signal: String
+
       attr_reader signal: String
 
-      # @rbs @signal: String
       # @rbs signal: String | Symbol
-      def initialize: (signal: String | Symbol) -> untyped
+      # @rbs return: void
+      def initialize: (signal: String | Symbol) -> void
 
       # Sends the signal to the current process
       # @rbs return: void

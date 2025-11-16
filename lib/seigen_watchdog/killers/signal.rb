@@ -6,10 +6,12 @@ module SeigenWatchdog
   module Killers
     # Killer that sends a signal to the current process
     class Signal < Base
+      # @rbs @signal: String
+
       attr_reader :signal #: String
 
-      # @rbs @signal: String
       # @rbs signal: String | Symbol
+      # @rbs return: void
       def initialize(signal:)
         super()
         @signal = signal.to_s

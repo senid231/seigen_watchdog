@@ -6,14 +6,21 @@ require_relative 'seigen_watchdog/version'
 
 # Monitoring and watchdog module for Ruby applications
 module SeigenWatchdog
+  # @rbs self.@monitor: Monitor?
+
   class Error < StandardError; end
 
   class << self
-    # @rbs self.@monitor: Monitor?
     attr_reader :monitor #: Monitor?
 
     # Starts the SeigenWatchdog monitor
-    # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Hash[Symbol | String, Limiters::Base]
+    # @rbs check_interval: Numeric?
+    # @rbs killer: Killers::Base
+    # @rbs limiters: Hash[Symbol | String, Limiters::Base]
+    # @rbs logger: Logger?
+    # @rbs on_exception: Proc?
+    # @rbs before_kill: Proc?
+    # @rbs return: Monitor
     def start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil, before_kill: nil)
       stop if started?
 

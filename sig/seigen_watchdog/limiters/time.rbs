@@ -4,14 +4,17 @@ module SeigenWatchdog
   module Limiters
     # Limiter based on execution time
     class Time < Base
+      @max_duration: Numeric
+
+      @start_time: Float?
+
       attr_reader start_time: Float?
 
       attr_reader max_duration: Numeric
 
-      # @rbs @max_duration: Numeric
-      # @rbs @start_time: Float?
       # @rbs max_duration: Numeric
-      def initialize: (max_duration: Numeric) -> untyped
+      # @rbs return: void
+      def initialize: (max_duration: Numeric) -> void
 
       # Called when monitor starts - records the start time
       # @rbs return: void

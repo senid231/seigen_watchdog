@@ -127,12 +127,15 @@ module SeigenWatchdog
 
     private
 
+    # @rbs exceeded_limiter: Limiters::Base
+    # @rbs return: void
     def run_before_kill(exceeded_limiter)
       @before_kill&.call(exceeded_limiter)
     rescue StandardError => e
       handle_exception(e)
     end
 
+    # @rbs return: void
     def increment_checks
       @mutex.synchronize do
         @checks += 1
@@ -140,12 +143,14 @@ module SeigenWatchdog
       end
     end
 
+    # @rbs return: void
     def start_background_thread
       @running = true
       @thread = Thread.new { background_loop }
       @thread.abort_on_exception = false
     end
 
+    # @rbs return: void
     def background_loop
       while @running
         check_once
@@ -155,19 +160,27 @@ module SeigenWatchdog
       handle_exception(e)
     end
 
+    # @rbs exception: StandardError
+    # @rbs return: void
     def handle_exception(exception)
       log_error("Exception in monitor: #{exception.class}: #{exception.message}")
       @on_exception&.call(exception)
     end
 
+    # @rbs message: String
+    # @rbs return: void
     def log_debug(message)
       @logger&.debug { "SeigenWatchdog: #{message}" }
     end
 
+    # @rbs message: String
+    # @rbs return: void
     def log_info(message)
       @logger&.info("SeigenWatchdog: #{message}")
     end
 
+    # @rbs message: String
+    # @rbs return: void
     def log_error(message)
       @logger&.error("SeigenWatchdog: #{message}")
     end

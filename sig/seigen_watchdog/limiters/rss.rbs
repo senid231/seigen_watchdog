@@ -4,12 +4,15 @@ module SeigenWatchdog
   module Limiters
     # Limiter based on RSS memory usage
     class RSS < Base
+      @max_rss: Integer
+
+      @mem: GetProcessMem
+
       attr_reader max_rss: Integer
 
-      # @rbs @max_rss: Integer
-      # @rbs @mem: GetProcessMem
       # @rbs max_rss: Integer
-      def initialize: (max_rss: Integer) -> untyped
+      # @rbs return: void
+      def initialize: (max_rss: Integer) -> void
 
       # @rbs return: bool
       def exceeded?: () -> bool

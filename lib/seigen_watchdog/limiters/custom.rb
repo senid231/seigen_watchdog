@@ -8,6 +8,7 @@ module SeigenWatchdog
     class Custom < Base
       # @rbs @checker: Proc | #call
       # @rbs checker: Proc | #call
+      # @rbs return: void
       def initialize(checker:)
         super()
         @checker = checker

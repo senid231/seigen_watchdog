@@ -9,7 +9,7 @@ module SeigenWatchdog
   attr_reader monitor: Monitor?
 
   # Starts the SeigenWatchdog monitor
-  # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Array[Limiters::Base]
+  # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Hash[Symbol | String, Limiters::Base]
   def self.start: (check_interval: Numeric?, killer: untyped, limiters: untyped, ?logger: untyped, ?on_exception: untyped, ?before_kill: untyped) -> untyped
 
   # Stops the SeigenWatchdog monitor

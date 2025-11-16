@@ -19,20 +19,22 @@ module SeigenWatchdog
 
     @logger: Logger?
 
-    @limiters: Array[Limiters::Base]
+    @limiters: Hash[Symbol | String, Limiters::Base]
 
     @killer: Killers::Base
 
     @check_interval: Numeric?
 
-    attr_reader checks: Integer
+    # @rbs!
+    #   attr_reader checks: Integer
+    attr_reader checks: untyped
 
     # Interval in seconds between checks, nil to disable background thread
     # @rbs check_interval: Numeric?
     # The killer to invoke when a limit is exceeded
     # @rbs killer: Killers::Base
-    # Array of limiters to check
-    # @rbs limiters: Array[Limiters::Base]
+    # Hash of limiters to check
+    # @rbs limiters: Hash[Symbol | String, Limiters::Base]
     # Optional logger for debugging
     # @rbs logger: Logger?
     # Optional callback when an exception occurs
@@ -40,7 +42,7 @@ module SeigenWatchdog
     # Optional callback invoked before killing, receives exceeded limiter
     # @rbs before_kill: Proc?
     # @rbs return: void
-    def initialize: (check_interval: Numeric?, killer: Killers::Base, limiters: Array[Limiters::Base], ?logger: Logger?, ?on_exception: Proc?, ?before_kill: Proc?) -> void
+    def initialize: (check_interval: Numeric?, killer: Killers::Base, limiters: Hash[Symbol | String, Limiters::Base], ?logger: Logger?, ?on_exception: Proc?, ?before_kill: Proc?) -> void
 
     # Performs a single check of all limiters
     # Returns true if any limiter exceeded and killer was invoked
@@ -60,6 +62,17 @@ module SeigenWatchdog
     # Returns true if the background thread is running
     # @rbs return: bool
     def running?: () -> bool
+
+    # Returns a limiter by name
+    # @rbs name: Symbol | String
+    # @rbs return: Limiters::Base
+    def limiter: (Symbol | String name) -> Limiters::Base
+
+    # Returns a hash of all limiters
+    # Returns a new hash with the same keys and values
+    # Modifications to the hash won't affect internal state, but limiter instances are shared
+    # @rbs return: Hash[Symbol | String, Limiters::Base]
+    def limiters: () -> Hash[Symbol | String, Limiters::Base]
 
     private
 

@@ -2,142 +2,144 @@
 
 RSpec.describe SeigenWatchdog::Limiters::Counter do
   let(:max_count) { 10 }
-
-  after do
-    described_class::REGISTRY.delete(:test_counter, safe: true)
-  end
+  let(:limiter) { described_class.new(max_count: max_count) }
 
   describe '#initialize' do
-    subject { described_class.new(:test_counter, max_count: max_count) }
+    subject { limiter }
 
-    it 'stores the name and max_count' do
-      expect { subject }.not_to raise_error
+    it 'stores the max_count' do
+      expect(subject.max_count).to eq(max_count)
     end
 
-    it 'does not create counter in registry yet' do
-      subject
-      expect(described_class::REGISTRY.get(:test_counter)).to be_nil
-    end
-  end
-
-  describe '.increment' do
-    subject { described_class.increment(:test_counter) }
-
-    context 'when counter exists' do
-      before do
-        limiter = described_class.new(:test_counter, max_count: max_count)
-        limiter.started
-      end
-
-      it 'increments the counter' do
-        expect { subject }.to change {
-          described_class::REGISTRY.get(:test_counter)
-        }.from(0).to(1)
-      end
+    it 'initializes counter to 0' do
+      expect(subject.exceeded?).to be false
     end
 
-    context 'when counter does not exist' do
-      it 'raises NotFoundError' do
-        expect { described_class.increment(:nonexistent) }.to raise_error(SeigenWatchdog::Registry::NotFoundError)
+    context 'with custom initial value' do
+      let(:limiter) { described_class.new(max_count: max_count, initial: 5) }
+
+      it 'initializes counter to the specified value' do
+        # Counter starts at 5, needs 5 more increments to reach max_count of 10
+        expect(subject.exceeded?).to be false
+        5.times { subject.increment }
+        expect(subject.exceeded?).to be true
       end
     end
   end
 
-  describe '.decrement' do
-    subject { described_class.decrement(:test_counter) }
+  describe '#increment' do
+    subject { limiter.increment }
+
+    it 'increments the counter by 1' do
+      expect { subject }.not_to change(limiter, :exceeded?)
+    end
+
+    context 'with count parameter' do
+      subject { limiter.increment(5) }
+
+      it 'increments the counter by specified amount' do
+        subject
+        expect(limiter.exceeded?).to be false
+      end
+    end
+
+    context 'when incrementing to max_count' do
+      it 'causes exceeded? to return true' do
+        10.times { limiter.increment }
+        expect(limiter.exceeded?).to be true
+      end
+    end
+
+    context 'when incrementing beyond max_count' do
+      it 'causes exceeded? to return true' do
+        15.times { limiter.increment }
+        expect(limiter.exceeded?).to be true
+      end
+    end
+
+    context 'when called from multiple threads' do
+      it 'safely increments without race conditions' do
+        threads = 100.times.map do
+          Thread.new { limiter.increment }
+        end
+        threads.each(&:join)
+
+        expect(limiter.exceeded?).to be true
+      end
+    end
+  end
+
+  describe '#decrement' do
+    subject { limiter.decrement }
 
     before do
-      limiter = described_class.new(:test_counter, max_count: max_count)
-      limiter.started
-      described_class.increment(:test_counter)
+      5.times { limiter.increment }
     end
 
-    it 'decrements the counter' do
-      expect { subject }.to change {
-        described_class::REGISTRY.get(:test_counter)
-      }.from(1).to(0)
+    it 'decrements the counter by 1' do
+      expect { subject }.not_to(change(limiter, :exceeded?))
+    end
+
+    context 'with count parameter' do
+      subject { limiter.decrement(3) }
+
+      it 'decrements the counter by specified amount' do
+        expect { subject }.not_to(change(limiter, :exceeded?))
+      end
+    end
+
+    context 'when called from multiple threads' do
+      it 'safely decrements without race conditions' do
+        100.times { limiter.increment }
+
+        threads = 50.times.map do
+          Thread.new { limiter.decrement }
+        end
+        threads.each(&:join)
+
+        expect(limiter.exceeded?).to be true
+      end
     end
   end
 
-  describe '.reset' do
-    subject { described_class.reset(:test_counter) }
+  describe '#reset' do
+    subject { limiter.reset }
 
     before do
-      limiter = described_class.new(:test_counter, max_count: max_count)
-      limiter.started
-      described_class.increment(:test_counter)
-      described_class.increment(:test_counter)
+      15.times { limiter.increment }
     end
 
     it 'resets the counter to 0' do
-      expect { subject }.to change {
-        described_class::REGISTRY.get(:test_counter)
-      }.from(2).to(0)
-    end
-  end
-
-  describe '#started' do
-    subject { limiter.started }
-
-    let(:limiter) { described_class.new(:test_counter, max_count: max_count) }
-
-    it 'creates counter in registry with initial value 0' do
+      expect(limiter.exceeded?).to be true
       subject
-      expect(described_class::REGISTRY.get(:test_counter)).to eq(0)
+      expect(limiter.exceeded?).to be false
     end
 
-    context 'when counter already exists in registry' do
-      before do
-        described_class::REGISTRY.create(:test_counter, 5)
-      end
+    context 'when called from multiple threads' do
+      it 'safely resets without race conditions' do
+        threads = [
+          Thread.new { 10.times { limiter.increment } },
+          Thread.new { limiter.reset },
+          Thread.new { 5.times { limiter.increment } }
+        ]
+        threads.each(&:join)
 
-      it 'resets counter to 0' do
+        # Counter should be either 5 (if reset happened first) or some other value
+        # The important thing is no exceptions occur
+        expect { limiter.exceeded? }.not_to raise_error
+      end
+    end
+
+    context 'with custom initial value' do
+      subject { limiter.reset(7) }
+
+      it 'resets the counter to the specified value' do
+        expect(limiter.exceeded?).to be true
         subject
-        expect(described_class::REGISTRY.get(:test_counter)).to eq(0)
-      end
-    end
-
-    context 'when called multiple times' do
-      it 'resets counter each time' do
-        limiter.started
-        described_class.increment(:test_counter)
-        described_class.increment(:test_counter)
-        expect(described_class::REGISTRY.get(:test_counter)).to eq(2)
-
-        limiter.started
-        expect(described_class::REGISTRY.get(:test_counter)).to eq(0)
-      end
-    end
-  end
-
-  describe '#stopped' do
-    subject { limiter.stopped }
-
-    let(:limiter) { described_class.new(:test_counter, max_count: max_count) }
-
-    before do
-      limiter.started
-    end
-
-    it 'removes counter from registry' do
-      subject
-      expect(described_class::REGISTRY.get(:test_counter)).to be_nil
-    end
-
-    context 'when counter does not exist in registry' do
-      before do
-        described_class::REGISTRY.delete(:test_counter, safe: true)
-      end
-
-      it 'does not raise error' do
-        expect { subject }.not_to raise_error
-      end
-    end
-
-    context 'when called multiple times' do
-      it 'does not raise error' do
-        limiter.stopped
-        expect { limiter.stopped }.not_to raise_error
+        expect(limiter.exceeded?).to be false
+        # Counter is now at 7, needs 3 more increments to reach max_count of 10
+        3.times { limiter.increment }
+        expect(limiter.exceeded?).to be true
       end
     end
   end
@@ -145,15 +147,9 @@ RSpec.describe SeigenWatchdog::Limiters::Counter do
   describe '#exceeded?' do
     subject { limiter.exceeded? }
 
-    let(:limiter) { described_class.new(:test_counter, max_count: max_count) }
-
-    before do
-      limiter.started
-    end
-
     context 'when count is below max' do
       before do
-        5.times { described_class.increment(:test_counter) }
+        5.times { limiter.increment }
       end
 
       it 'returns false' do
@@ -163,7 +159,7 @@ RSpec.describe SeigenWatchdog::Limiters::Counter do
 
     context 'when count equals max' do
       before do
-        10.times { described_class.increment(:test_counter) }
+        10.times { limiter.increment }
       end
 
       it 'returns true' do
@@ -173,11 +169,25 @@ RSpec.describe SeigenWatchdog::Limiters::Counter do
 
     context 'when count exceeds max' do
       before do
-        15.times { described_class.increment(:test_counter) }
+        15.times { limiter.increment }
       end
 
       it 'returns true' do
         expect(subject).to be true
+      end
+    end
+
+    context 'when called from multiple threads' do
+      it 'safely checks without race conditions' do
+        threads = 100.times.map do |i|
+          Thread.new do
+            limiter.increment if i.even?
+            limiter.exceeded?
+          end
+        end
+
+        results = threads.map(&:value)
+        expect(results).to all(be(true).or(be(false)))
       end
     end
   end

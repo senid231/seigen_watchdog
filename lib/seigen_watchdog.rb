@@ -13,7 +13,7 @@ module SeigenWatchdog
     attr_reader :monitor #: Monitor?
 
     # Starts the SeigenWatchdog monitor
-    # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Array[Limiters::Base]
+    # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Hash[Symbol | String, Limiters::Base]
     def start(check_interval:, killer:, limiters:, logger: nil, on_exception: nil, before_kill: nil)
       stop if started?
 
@@ -45,7 +45,6 @@ module SeigenWatchdog
   end
 end
 
-require_relative 'seigen_watchdog/registry'
 require_relative 'seigen_watchdog/limiters/base'
 require_relative 'seigen_watchdog/limiters/rss'
 require_relative 'seigen_watchdog/limiters/time'

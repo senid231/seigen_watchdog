@@ -7,7 +7,7 @@ module SeigenWatchdog
   class Monitor
     # @rbs @check_interval: Numeric?
     # @rbs @killer: Killers::Base
-    # @rbs @limiters: Array[Limiters::Base]
+    # @rbs @limiters: Hash[Symbol | String, Limiters::Base]
     # @rbs @logger: Logger?
     # @rbs @on_exception: Proc?
     # @rbs @before_kill: Proc?
@@ -17,14 +17,16 @@ module SeigenWatchdog
     # @rbs @running: bool
     # @rbs @mutex: Thread::Mutex
 
-    attr_reader :checks #: Integer
+    # @rbs!
+    #   attr_reader checks: Integer
+    attr_reader :checks
 
     # Interval in seconds between checks, nil to disable background thread
     # @rbs check_interval: Numeric?
     # The killer to invoke when a limit is exceeded
     # @rbs killer: Killers::Base
-    # Array of limiters to check
-    # @rbs limiters: Array[Limiters::Base]
+    # Hash of limiters to check
+    # @rbs limiters: Hash[Symbol | String, Limiters::Base]
     # Optional logger for debugging
     # @rbs logger: Logger?
     # Optional callback when an exception occurs
@@ -46,9 +48,10 @@ module SeigenWatchdog
       @mutex = Mutex.new
 
       # Call started on all limiters to initialize their state
-      @limiters.each(&:started)
+      @limiters.each_value(&:started)
 
       if @check_interval
+        log_info('Monitor started with background thread')
         start_background_thread
       else
         log_info('Monitor initialized without background thread; manual checks required')
@@ -62,7 +65,7 @@ module SeigenWatchdog
       increment_checks
       log_debug("Performing check ##{@checks}")
 
-      exceeded_limiter = @limiters.find(&:exceeded?)
+      exceeded_limiter = @limiters.values.find(&:exceeded?)
       if exceeded_limiter
         log_info("Limit exceeded: #{exceeded_limiter.class.name}, invoking killer")
         run_before_kill(exceeded_limiter)
@@ -97,7 +100,7 @@ module SeigenWatchdog
       end
 
       # Call stopped on all limiters to clean up their state
-      @limiters.each(&:stopped)
+      @limiters.each_value(&:stopped)
     end
 
     # Checks if the background thread is running
@@ -105,6 +108,21 @@ module SeigenWatchdog
     # @rbs return: bool
     def running?
       @running && @thread&.alive?
+    end
+
+    # Returns a limiter by name
+    # @rbs name: Symbol | String
+    # @rbs return: Limiters::Base
+    def limiter(name)
+      @limiters.fetch(name)
+    end
+
+    # Returns a hash of all limiters
+    # Returns a new hash with the same keys and values
+    # Modifications to the hash won't affect internal state, but limiter instances are shared
+    # @rbs return: Hash[Symbol | String, Limiters::Base]
+    def limiters
+      @limiters.to_h { |k, v| [k, v] }
     end
 
     private
@@ -126,7 +144,6 @@ module SeigenWatchdog
       @running = true
       @thread = Thread.new { background_loop }
       @thread.abort_on_exception = false
-      log_debug('Monitor started with background thread')
     end
 
     def background_loop
@@ -139,8 +156,8 @@ module SeigenWatchdog
     end
 
     def handle_exception(exception)
-      @on_exception&.call(exception)
       log_error("Exception in monitor: #{exception.class}: #{exception.message}")
+      @on_exception&.call(exception)
     end
 
     def log_debug(message)

@@ -13,7 +13,7 @@ RSpec.describe SeigenWatchdog do
     subject { described_class.start(check_interval: check_interval, killer: killer, limiters: limiters) }
 
     let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
-    let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
+    let(:limiters) { { time: SeigenWatchdog::Limiters::Time.new(max_duration: 1000) } }
 
     context 'with background thread' do
       let(:check_interval) { 1 }
@@ -60,7 +60,7 @@ RSpec.describe SeigenWatchdog do
     subject { described_class.stop }
 
     let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
-    let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
+    let(:limiters) { { time: SeigenWatchdog::Limiters::Time.new(max_duration: 1000) } }
 
     before do
       described_class.start(check_interval: 1, killer: killer, limiters: limiters)
@@ -84,7 +84,7 @@ RSpec.describe SeigenWatchdog do
 
     context 'when started' do
       let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
-      let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
+      let(:limiters) { { time: SeigenWatchdog::Limiters::Time.new(max_duration: 1000) } }
 
       before do
         described_class.start(check_interval: 1, killer: killer, limiters: limiters)
@@ -107,7 +107,7 @@ RSpec.describe SeigenWatchdog do
 
     context 'when started' do
       let(:killer) { SeigenWatchdog::Killers::Signal.new(signal: 'INT') }
-      let(:limiters) { [SeigenWatchdog::Limiters::Time.new(max_duration: 1000)] }
+      let(:limiters) { { time: SeigenWatchdog::Limiters::Time.new(max_duration: 1000) } }
       let(:monitor) { described_class.start(check_interval: 1, killer: killer, limiters: limiters) }
 
       before do

@@ -36,19 +36,20 @@ require 'seigen_watchdog'
 SeigenWatchdog.start(
  check_interval: 5, # seconds or nil for no periodic checks
  killer: SeigenWatchdog::Killers::Signal.new(signal: 'INT'),
- limiters: [
-    SeigenWatchdog::Limiters::RSS.new(max_rss: 200 * 1024 * 1024), # 200 MB
-    SeigenWatchdog::Limiters::Time.new(max_duration: 24 * 60 * 60), # 24 hours
-    SeigenWatchdog::Limiters::Counter.new(:main, max_count: 1_000_000), # 1 million iterations
-    SeigenWatchdog::Limiters::Custom.new(checker: -> { SomeCondition.met? }) # custom condition
- ],
+ limiters: {
+    rss: SeigenWatchdog::Limiters::RSS.new(max_rss: 200 * 1024 * 1024), # 200 MB
+    time: SeigenWatchdog::Limiters::Time.new(max_duration: 24 * 60 * 60), # 24 hours
+    jobs: SeigenWatchdog::Limiters::Counter.new(max_count: 1_000_000), # 1 million iterations
+    custom: SeigenWatchdog::Limiters::Custom.new(checker: -> { SomeCondition.met? }) # custom condition
+ },
  logger: Logger.new($stdout), # optional logger, logs DEBUG for each check, INFO when killer is invoked
  on_exception: ->(e) { Sentry.capture_exception(e) }, # optional exception handler
  before_kill: ->(limiter) { Prometheus::KillInstrument.send_metrics(limiter.class.name) } # optional callback before kill
 )
-  
+
 # to increment particular count limiter
-SeigenWatchdog::Limiters::Counter.increment(:main) # Example of incrementing the counter limiter
+SeigenWatchdog.monitor.limiter(:jobs).increment # increment by 1
+SeigenWatchdog.monitor.limiter(:jobs).increment(5) # increment by 5
 
 # to perform check manually (if check_interval is nil)
 SeigenWatchdog.monitor.check_once
@@ -70,7 +71,7 @@ Starts the watchdog monitor with the specified configuration.
 **Parameters:**
 - `check_interval` - Interval in seconds between checks, or `nil` for manual checks only
 - `killer` - Killer strategy instance (e.g., `SeigenWatchdog::Killers::Signal.new(signal: 'INT')`)
-- `limiters` - Array of limiter instances
+- `limiters` - Hash of limiter instances (keys are limiter names, values are limiter instances)
 - `logger` - Optional logger instance for debug/info logging
 - `on_exception` - Optional callback proc for exception handling (receives exception as argument)
 - `before_kill` - Optional callback proc invoked before killing (receives exceeded limiter as argument)
@@ -93,6 +94,21 @@ Performs a single manual check of all limiters. Useful when `check_interval` is 
 
 **Returns:** `true` if a limit was exceeded and killer was invoked, `false` otherwise.
 
+#### `monitor.limiter(name)`
+Returns a limiter instance by its name.
+
+**Parameters:**
+- `name` - Symbol or String name of the limiter
+
+**Returns:** Limiter instance
+
+**Raises:** `KeyError` if limiter with the given name doesn't exist
+
+#### `monitor.limiters`
+Returns a hash of all limiters. Modifications to the returned hash won't affect internal state, but limiter instances are shared.
+
+**Returns:** Hash of limiters (keys are names, values are limiter instances)
+
 ### Limiters
 
 #### `SeigenWatchdog::Limiters::RSS.new(max_rss:)`
@@ -103,15 +119,31 @@ Monitors RSS (Resident Set Size) memory usage.
 Monitors execution time since limiter creation.
 - `max_duration` - Maximum duration in seconds
 
-#### `SeigenWatchdog::Limiters::Counter.new(name, max_count:)`
+#### `SeigenWatchdog::Limiters::Counter.new(max_count:, initial: 0)`
 Monitors iteration count with manual incrementing.
-- `name` - Symbol identifier for the counter
 - `max_count` - Maximum count before exceeding
+- `initial` - Initial counter value (default: 0)
 
-**Class Methods:**
-- `Counter.increment(name)` - Increments the counter
-- `Counter.decrement(name)` - Decrements the counter
-- `Counter.reset(name)` - Resets the counter to 0
+**Instance Methods:**
+- `increment(count = 1)` - Increments the counter by the specified amount (default: 1)
+- `decrement(count = 1)` - Decrements the counter by the specified amount (default: 1)
+- `reset(initial = 0)` - Resets the counter to the specified value (default: 0)
+
+**Usage:**
+```ruby
+# Access counter limiter via monitor
+counter = SeigenWatchdog.monitor.limiter(:jobs)
+counter.increment      # increment by 1
+counter.increment(5)   # increment by 5
+counter.decrement      # decrement by 1
+counter.decrement(3)   # decrement by 3
+counter.reset          # reset to 0
+counter.reset(10)      # reset to 10
+
+# Create counter with custom initial value
+SeigenWatchdog::Limiters::Counter.new(max_count: 100, initial: 50)
+# Counter starts at 50, will exceed at 100
+```
 
 #### `SeigenWatchdog::Limiters::Custom.new(checker:)`
 Custom condition limiter using a proc.

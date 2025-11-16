@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 module SeigenWatchdog
   module Killers
     # Killer that sends a signal to the current process

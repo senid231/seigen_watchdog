@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 require_relative 'seigen_watchdog/version'
 
 # Monitoring and watchdog module for Ruby applications

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 module SeigenWatchdog
   module Limiters
     # Base class for all limiters

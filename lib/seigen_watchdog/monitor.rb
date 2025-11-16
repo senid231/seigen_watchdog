@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 module SeigenWatchdog
   # Monitor class that checks limiters and invokes the killer when needed
   class Monitor

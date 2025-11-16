@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rbs_inline: enabled
-
 module SeigenWatchdog
   module Limiters
     # Limiter based on a custom checker lambda

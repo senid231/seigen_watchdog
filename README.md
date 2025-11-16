@@ -1,5 +1,9 @@
 # SeigenWatchdog
 
+[![Gem Version](https://badge.fury.io/rb/seigen_watchdog.svg)](https://rubygems.org/gems/seigen_watchdog)
+[![CI](https://github.com/senid231/seigen_watchdog/actions/workflows/main.yml/badge.svg)](https://github.com/senid231/seigen_watchdog/actions/workflows/main.yml)
+[![CodeQL](https://github.com/senid231/seigen_watchdog/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/senid231/seigen_watchdog/actions/workflows/github-code-scanning/codeql)
+
 Seigen (制限 — “limit, restriction”).
 
 Monitors and gracefully terminates a Ruby application based on configurable memory usage, execution time, iteration count, or custom conditions. Threadsafe and easy to integrate.

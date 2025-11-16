@@ -6,12 +6,14 @@ module SeigenWatchdog
   module Limiters
     # Limiter based on execution time
     class Time < Base
+      # @rbs @max_duration: Numeric
+      # @rbs @start_time: Float?
+
       attr_reader :start_time #: Float?
       attr_reader :max_duration #: Numeric
 
-      # @rbs @max_duration: Numeric
-      # @rbs @start_time: Float?
       # @rbs max_duration: Numeric
+      # @rbs return: void
       def initialize(max_duration:)
         super()
         @max_duration = max_duration

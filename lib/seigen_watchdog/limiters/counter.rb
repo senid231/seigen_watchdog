@@ -6,10 +6,15 @@ module SeigenWatchdog
   module Limiters
     # Limiter based on iteration count
     class Counter < Base
+      # @rbs @max_count: Integer
+      # @rbs @count: Integer
+      # @rbs @mutex: Thread::Mutex
+
       attr_reader :max_count #: Integer
 
-      # @param max_count [Integer] maximum count allowed
-      # @param initial [Integer] initial counter value (default: 0)
+      # @rbs max_count: Integer
+      # @rbs initial: Integer
+      # @rbs return: void
       def initialize(max_count:, initial: 0)
         super()
         @max_count = max_count
@@ -18,27 +23,27 @@ module SeigenWatchdog
       end
 
       # Increments the counter by the specified amount
-      # @param count [Integer] the amount to increment (default: 1)
-      # @return [void]
+      # @rbs count: Integer
+      # @rbs return: void
       def increment(count = 1)
         @mutex.synchronize { @count += count }
       end
 
       # Decrements the counter by the specified amount
-      # @param count [Integer] the amount to decrement (default: 1)
-      # @return [void]
+      # @rbs count: Integer
+      # @rbs return: void
       def decrement(count = 1)
         @mutex.synchronize { @count -= count }
       end
 
       # Resets the counter to the specified initial value
-      # @param initial [Integer] value to reset counter to (default: 0)
-      # @return [void]
+      # @rbs initial: Integer
+      # @rbs return: void
       def reset(initial = 0)
         @mutex.synchronize { @count = initial }
       end
 
-      # @return [Boolean] true if current count exceeds or equals the maximum
+      # @rbs return: bool
       def exceeded?
         @mutex.synchronize { @count >= @max_count }
       end

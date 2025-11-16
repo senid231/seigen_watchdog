@@ -26,3 +26,12 @@ jobs:
         bundler-cache: true
     - name: Run the default task
       run: bundle exec rake
+    - name: Check RBS signature
+      # fail if after signature generation there are any changes in sig/
+      run: |
+        bundle exec rbs-inline --opt-out --output=sig lib
+        if [[ -n $(git status --porcelain sig/) ]]; then
+          echo "RBS signatures are out of date. Please run 'bundle exec rbs-inline --opt-out --output=sig lib' and commit the changes."
+          git --no-pager diff sig/
+          exit 1
+        fi

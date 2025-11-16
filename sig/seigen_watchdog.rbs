@@ -2,15 +2,22 @@
 
 # Monitoring and watchdog module for Ruby applications
 module SeigenWatchdog
+  self.@monitor: Monitor?
+
   class Error < StandardError
   end
 
-  # @rbs self.@monitor: Monitor?
   attr_reader monitor: Monitor?
 
   # Starts the SeigenWatchdog monitor
-  # @rbs check_interval: Numeric?, killer: Killers::Base, limiters: Hash[Symbol | String, Limiters::Base]
-  def self.start: (check_interval: Numeric?, killer: untyped, limiters: untyped, ?logger: untyped, ?on_exception: untyped, ?before_kill: untyped) -> untyped
+  # @rbs check_interval: Numeric?
+  # @rbs killer: Killers::Base
+  # @rbs limiters: Hash[Symbol | String, Limiters::Base]
+  # @rbs logger: Logger?
+  # @rbs on_exception: Proc?
+  # @rbs before_kill: Proc?
+  # @rbs return: Monitor
+  def self.start: (check_interval: Numeric?, killer: Killers::Base, limiters: Hash[Symbol | String, Limiters::Base], ?logger: Logger?, ?on_exception: Proc?, ?before_kill: Proc?) -> Monitor
 
   # Stops the SeigenWatchdog monitor
   # @rbs return: void

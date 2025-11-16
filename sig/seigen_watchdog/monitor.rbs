@@ -76,20 +76,33 @@ module SeigenWatchdog
 
     private
 
-    def run_before_kill: (untyped exceeded_limiter) -> untyped
+    # @rbs exceeded_limiter: Limiters::Base
+    # @rbs return: void
+    def run_before_kill: (Limiters::Base exceeded_limiter) -> void
 
-    def increment_checks: () -> untyped
+    # @rbs return: void
+    def increment_checks: () -> void
 
-    def start_background_thread: () -> untyped
+    # @rbs return: void
+    def start_background_thread: () -> void
 
-    def background_loop: () -> untyped
+    # @rbs return: void
+    def background_loop: () -> void
 
-    def handle_exception: (untyped exception) -> untyped
+    # @rbs exception: StandardError
+    # @rbs return: void
+    def handle_exception: (StandardError exception) -> void
 
-    def log_debug: (untyped message) -> untyped
+    # @rbs message: String
+    # @rbs return: void
+    def log_debug: (String message) -> void
 
-    def log_info: (untyped message) -> untyped
+    # @rbs message: String
+    # @rbs return: void
+    def log_info: (String message) -> void
 
-    def log_error: (untyped message) -> untyped
+    # @rbs message: String
+    # @rbs return: void
+    def log_error: (String message) -> void
   end
 end

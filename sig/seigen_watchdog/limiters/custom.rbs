@@ -6,7 +6,8 @@ module SeigenWatchdog
     class Custom < Base
       # @rbs @checker: Proc | #call
       # @rbs checker: Proc | #call
-      def initialize: (checker: untyped) -> untyped
+      # @rbs return: void
+      def initialize: (checker: untyped) -> void
 
       # @rbs return: bool
       def exceeded?: () -> bool

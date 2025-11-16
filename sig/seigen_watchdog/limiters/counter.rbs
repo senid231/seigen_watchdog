@@ -1,0 +1,39 @@
+# Generated from lib/seigen_watchdog/limiters/counter.rb with RBS::Inline
+
+module SeigenWatchdog
+  module Limiters
+    # Limiter based on iteration count
+    class Counter < Base
+      @max_count: Integer
+
+      @count: Integer
+
+      @mutex: Thread::Mutex
+
+      attr_reader max_count: Integer
+
+      # @rbs max_count: Integer
+      # @rbs initial: Integer
+      # @rbs return: void
+      def initialize: (max_count: Integer, ?initial: Integer) -> void
+
+      # Increments the counter by the specified amount
+      # @rbs count: Integer
+      # @rbs return: void
+      def increment: (?Integer count) -> void
+
+      # Decrements the counter by the specified amount
+      # @rbs count: Integer
+      # @rbs return: void
+      def decrement: (?Integer count) -> void
+
+      # Resets the counter to the specified initial value
+      # @rbs initial: Integer
+      # @rbs return: void
+      def reset: (?Integer initial) -> void
+
+      # @rbs return: bool
+      def exceeded?: () -> bool
+    end
+  end
+end
